@@ -1,6 +1,7 @@
 import logging
 import psycopg2
 import datetime
+import os
 import config
 from aiogram import Bot
 from aiogram import executor
@@ -11,11 +12,9 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 import aiogram.utils.markdown as fmt
 
-con = psycopg2.connect(user="postgres",
-                       password="gs",
-                       host="127.0.0.1",
-                       port="5432",
-                       database="postgres")
+DATABASE_URL = os.environ['DATABASE_URL']
+
+con = psycopg2.connect(DATABASE_URL, sslmode='require')
 cur = con.cursor()
 
 bot = Bot(token=Token)
