@@ -12,9 +12,16 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 import aiogram.utils.markdown as fmt
 
-DATABASE_URL = os.environ['DATABASE_URL']
-
-con = psycopg2.connect(DATABASE_URL, sslmode='require')
+# DATABASE_URL = os.environ['DATABASE_URL']
+#
+# con = psycopg2.connect(DATABASE_URL, sslmode='require')
+con = psycopg2.connect(
+  database="postgres",
+  user="postgres",
+  password="gs",
+  host="127.0.0.1",
+  port="5432"
+)
 cur = con.cursor()
 
 bot = Bot(token=Token)
@@ -35,14 +42,18 @@ cur.execute(f'''CREATE TABLE IF NOT EXISTS claims
                                  Date TEXT,
                                  State TEXT,
                                  NameUser TEXT, 
-                                 Price INT);''')
+                                 Price INT,
+                                 TextC TEXT);''')
 con.commit()
 
 claim_a = {}
 
-
 class SendMessage(StatesGroup):
     waiting_for_message_text = State()
+
+
+class SendClaim(StatesGroup):
+    claim_data = State()
 
 
 class NewEvent(StatesGroup):
@@ -176,41 +187,63 @@ async def clb_events(call: types.CallbackQuery):
         async def clb_events_send(call: types.CallbackQuery):
             date = datetime.datetime.now()
             user_name = call.message.chat.username
-            cur.execute(f'''INSERT INTO p{call.message.chat.id} (Name, Date, State, NameUser, Price, AnswerAdmin) VALUES 
-                                                   ('{rows[i][1]}', 
-                                                   '{date}', 
-                                                   'На рассмотрении', 
-                                                   '{user_name}', 
-                                                   '{rows[i][4]}',
-                                                   ' ');''')
-            con.commit()
             cur.execute(f"SELECT * FROM p{call.message.chat.id}")
-            rowssss = cur.fetchall()
-            claim_id = f'{call.message.chat.id}_{len(rowssss)}'
-            cur.execute(f'''INSERT INTO claims (Id, ChatId, Name, Date, State, NameUser, Price) VALUES 
-                                                               ('{claim_id}',
-                                                               '{call.message.chat.id}',
-                                                               '{rows[i][1]}', 
-                                                               '{date}', 
-                                                               'На рассмотрении', 
-                                                               '{user_name}', 
-                                                               '{rows[i][4]}');''')
-            con.commit()
-            key = types.InlineKeyboardMarkup(row_width=1)
-            key.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbStart"))
-            keya = types.InlineKeyboardMarkup(row_width=1)
-            keya.add(types.InlineKeyboardButton(text=f"Написать", callback_data=f"ClbSendMessage"))
-            await call.message.edit_text(
-                'Заявка успешно создана. Ожидайте! В ближайшее время с вами свяжется администратор!', reply_markup=key)
-            claim_a['admin_claim_id'] = claim_id
-            claim_a['admin_chat_id'] = call.message.chat.id
-            claim_a['admin_chat_date'] = date
-            for o in admins:
-                await bot.send_message(int(o), f'Новая заявка!!!'
-                                               f'\n\nПрогулка: {rows[i][1]}'
-                                               f'\nДата: {date}'
-                                               f'\nИмя пользователя: {user_name}'
-                                               f'\nЦена: {rows[i][4]}', reply_markup=keya)
+            row_sel = cur.fetchall()
+            k = 1
+            for p in range(len(row_sel)):
+                if (row_sel[p][1].split()[0] == f'{datetime.datetime.now()}'.split()[0]) and (rows[i][1] == row_sel[p][0]):
+                    k = 0
+            if k:
+                await SendClaim.claim_data.set()
+                await call.message.edit_text('Напишите сообщение к заявке и укажите в нем контактные данные (номер телефона/ссылка на телеграм/ссылка на страницу вк)...')
+
+                @dp.message_handler(state=SendClaim.claim_data)
+                async def send_message(message: types.Message, state: FSMContext):
+                    cur.execute(f'''INSERT INTO p{message.chat.id} (Name, Date, State, NameUser, Price, AnswerAdmin) VALUES 
+                                                                                       ('{rows[i][1]}', 
+                                                                                       '{date}', 
+                                                                                       'На рассмотрении', 
+                                                                                       '{user_name}', 
+                                                                                       '{rows[i][4]}',
+                                                                                       ' ');''')
+                    con.commit()
+                    cur.execute(f"SELECT * FROM p{message.chat.id}")
+                    rowssss = cur.fetchall()
+                    claim_id = f'{message.chat.id}_{len(rowssss)}'
+                    ttt = message.text
+                    cur.execute(f'''INSERT INTO claims (Id, ChatId, Name, Date, State, NameUser, Price, TextC) VALUES 
+                                                                                                   ('{claim_id}',
+                                                                                                   '{call.message.chat.id}',
+                                                                                                   '{rows[i][1]}', 
+                                                                                                   '{date}', 
+                                                                                                   'На рассмотрении', 
+                                                                                                   '{user_name}', 
+                                                                                                   '{rows[i][4]}',
+                                                                                                   '{ttt}');''')
+                    con.commit()
+                    key = types.InlineKeyboardMarkup(row_width=1)
+                    key.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbStart"))
+                    keya = types.InlineKeyboardMarkup(row_width=1)
+                    keya.add(types.InlineKeyboardButton(text=f"Написать", callback_data=f"ClbSendMessage"))
+                    await message.answer(
+                        'Заявка успешно создана. Ожидайте! В ближайшее время с вами свяжется администратор!',
+                        reply_markup=key)
+                    claim_a['admin_claim_id'] = claim_id
+                    claim_a['admin_chat_id'] = message.chat.id
+                    claim_a['admin_chat_date'] = date
+                    for o in admins:
+                        await bot.send_message(int(o), f'Новая заявка!!!'
+                                                       f'\n\nПрогулка: {rows[i][1]}'
+                                                       f'\nДата: {date}'
+                                                       f'\nИмя пользователя: {user_name}'
+                                                       f'\nЦена: {rows[i][4]}'
+                                                       f'\n\nКомментарий: {ttt}', reply_markup=keya)
+                    await state.finish()
+            else:
+                key = types.InlineKeyboardMarkup(row_width=1)
+                key.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbStart"))
+                await call.message.edit_text('Заявка повторно быть подана не может! Второй раз подать заявку вы сможете только завтра!',
+                    reply_markup=key)
 
 
 @dp.callback_query_handler(text="ClbHelp")
@@ -224,14 +257,14 @@ async def clb_help(call: types.CallbackQuery):
 async def clb_help(call: types.CallbackQuery):
     cur.execute(f"SELECT * FROM p{call.message.chat.id}")
     rows = cur.fetchall()
-    buttons = [types.InlineKeyboardButton(text=f"{rows[i][0]} ({'.'.join(rows[i][1].split()[0].split('-')[::-1])})", callback_data=f"ClbEvents{rows[i][1]}") for i in
+    buttons = [types.InlineKeyboardButton(text=f"{rows[i][0]} ({'.'.join(rows[i][1].split()[0].split('-')[::-1])})", callback_data=f"ClbEvents{rows[i][1].split()[0]}_{rows[i][1].split()[1]}") for i in
                range(len(rows))]
     keyboard = types.InlineKeyboardMarkup(row_width=1)
     keyboard.add(*buttons)
     keyboard.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbStart"))
     await call.message.edit_text('Выберите название прогулки:', reply_markup=keyboard)
     for i in range(len(rows)):
-        @dp.callback_query_handler(text=f"ClbEvents{rows[i][1]}")
+        @dp.callback_query_handler(text=f"ClbEvents{rows[i][1].split()[0]}_{rows[i][1].split()[1]}")
         async def clb_events_events(call: types.CallbackQuery):
             key = types.InlineKeyboardMarkup(row_width=1)
             key.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbClaims"))
@@ -264,7 +297,7 @@ async def send_message(message: types.Message, state: FSMContext):
 async def events_adm(call: types.CallbackQuery):
     cur.execute("SELECT * FROM events")
     rows = cur.fetchall()
-    buttons = [types.InlineKeyboardButton(text=f"{rows[i][1]}", callback_data=f"ClbEvents{rows[i][0]}-A") for i in
+    buttons = [types.InlineKeyboardButton(text=f"{rows[i][1]}", callback_data=f"ClbEvents{rows[i][0].split()[0]}_{rows[i][0].split()[1]}-A") for i in
                range(len(rows))]
     keyboard = types.InlineKeyboardMarkup(row_width=1)
     keyboard.add(*buttons)
@@ -276,17 +309,17 @@ async def events_adm(call: types.CallbackQuery):
     await call.message.edit_text(text, reply_markup=keyboard)
 
     for i in range(len(rows)):
-        @dp.callback_query_handler(text=f"ClbEvents{rows[i][0]}-A")
+        @dp.callback_query_handler(text=f"ClbEvents{rows[i][0].split()[0]}_{rows[i][0].split()[1]}-A")
         async def clb_events_events_adm(call: types.CallbackQuery):
             key = types.InlineKeyboardMarkup(row_width=1)
-            key.add(types.InlineKeyboardButton(text=f"Удалить", callback_data=f"ClbDelEvent{rows[i][0]}"),
+            key.add(types.InlineKeyboardButton(text=f"Удалить", callback_data=f"ClbDelEvent{rows[i][0].split()[0]}_{rows[i][0].split()[1]}"),
                     types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbEvents-A"))
             await call.message.edit_text(f'<b>{rows[i][1]}</b>'
                                          f'\n\n{rows[i][2]}'
                                          f'\n\nЦена: {rows[i][4]}', parse_mode=types.ParseMode.HTML, reply_markup=key)
 
 
-            @dp.callback_query_handler(text=f"ClbDelEvent{rows[i][0]}")
+            @dp.callback_query_handler(text=f"ClbDelEvent{rows[i][0].split()[0]}_{rows[i][0].split()[1]}")
             async def clb_del_event_adm(call: types.CallbackQuery):
                 cur.execute(f'''DELETE FROM events WHERE Id = '{rows[i][0]}';''')
                 con.commit()
@@ -344,7 +377,7 @@ async def clb_claims_adm(call: types.CallbackQuery):
 async def clb_claims_true_adm(call: types.CallbackQuery):
     cur.execute("SELECT * FROM claims")
     rows = cur.fetchall()
-    buttons = [types.InlineKeyboardButton(text=f"{rows[i][2]} ({'.'.join(rows[i][3].split()[0].split('-')[::-1])})", callback_data=f"ClbClaimTrue{rows[i][0]}-A") for i in
+    buttons = [types.InlineKeyboardButton(text=f"{rows[i][2]} ({'.'.join(rows[i][3].split()[0].split('-')[::-1])})", callback_data=f"ClbClaimTrue{'_'.join(rows[i][3].split()[0].split('-')[::-1])}_{'_'.join(rows[i][3].split()[1].split(':')[0:2])}-A") for i in
                range(len(rows)) if rows[i][4] == 'На рассмотрении']
     keyboard = types.InlineKeyboardMarkup(row_width=1)
     keyboard.add(*buttons)
@@ -354,25 +387,25 @@ async def clb_claims_true_adm(call: types.CallbackQuery):
         text = 'К сожалению новых заявок пока нет!'
     await call.message.edit_text(text, reply_markup=keyboard)
     for i in range(len(rows)):
-        @dp.callback_query_handler(text=f"ClbClaimTrue{rows[i][0]}-A")
+        @dp.callback_query_handler(text=f"ClbClaimTrue{'_'.join(rows[i][3].split()[0].split('-')[::-1])}_{'_'.join(rows[i][3].split()[1].split(':')[0:2])}-A")
         async def clb_claims_true_adm_1(call: types.CallbackQuery):
             keyb = types.InlineKeyboardMarkup(row_width=1)
-            keyb.add(types.InlineKeyboardButton(text=f"Поставить статус - Выполнена", callback_data=f"ClbClaimTrue{rows[i][0]}-True-A"),
+            keyb.add(types.InlineKeyboardButton(text=f"Поставить статус - Выполнена", callback_data=f"ClbClaimTrue{rows[i][3].split()[0]}_{rows[i][3].split()[1]}-True-A"),
                      types.InlineKeyboardButton(text=f"Написать сообщение к заявке", callback_data=f"ClbSendMessage"),
                      types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbClaimsTrue-A"))
             claim_a['admin_claim_id'] = rows[i][0]
             cur.execute(f"SELECT * FROM p{rows[i][1]} WHERE Date = '{rows[i][3]}'")
             r = cur.fetchall()
-            print(r)
             await call.message.edit_text(f'ChatId - {rows[i][1]}'
                                          f'\n\nНазвание мероприятия: {rows[i][2]}'
                                          f'\nДата: {".".join(rows[i][3].split()[0].split("-")[::-1])} в {":".join(rows[i][3].split()[1].split(":")[0:2])}'
                                          f'\nСтатус: {rows[i][4]}'
                                          f'\nИмя пользователя: @{rows[i][5]}'
                                          f'\n\nЦена: {rows[i][6]}'
-                                         f'\n\nСообщение администратора: {r[0][5]}', reply_markup=keyb)
+                                         f'\n\nСообщение администратора: {r[0][5]}'
+                                         f'\n\nКомментарий пользователя: {rows[i][7]}', reply_markup=keyb)
 
-        @dp.callback_query_handler(text=f"ClbClaimTrue{rows[i][0]}-True-A")
+        @dp.callback_query_handler(text=f"ClbClaimTrue{rows[i][3].split()[0]}_{rows[i][3].split()[1]}-True-A")
         async def clb_claims_true_adm_2(call: types.CallbackQuery):
             cur.execute(f'''UPDATE claims SET State = 'Выполнена' WHERE Id = '{rows[i][0]}';''')
             con.commit()
@@ -386,7 +419,7 @@ async def clb_claims_true_adm(call: types.CallbackQuery):
 async def clb_claims_false_adm(call: types.CallbackQuery):
     cur.execute("SELECT * FROM claims")
     rows = cur.fetchall()
-    buttons = [types.InlineKeyboardButton(text=f"{rows[i][2]} ({rows[i][3].split()[0]})", callback_data=f"ClbClaimFalse{rows[i][0]}-A") for i in
+    buttons = [types.InlineKeyboardButton(text=f"{rows[i][2]} ({rows[i][3].split()[0]})", callback_data=f"ClbClaimFalse{rows[i][3].split()[0]}_{rows[i][3].split()[1]}-A") for i in
                range(len(rows)) if rows[i][4] == 'Выполнена']
     keyboard = types.InlineKeyboardMarkup(row_width=1)
     keyboard.add(*buttons)
@@ -396,7 +429,7 @@ async def clb_claims_false_adm(call: types.CallbackQuery):
         text = 'К сожалению новых заявок пока нет!'
     await call.message.edit_text(text, reply_markup=keyboard)
     for i in range(len(rows)):
-        @dp.callback_query_handler(text=f"ClbClaimFalse{rows[i][0]}-A")
+        @dp.callback_query_handler(text=f"ClbClaimFalse{rows[i][3].split()[0]}_{rows[i][3].split()[1]}-A")
         async def clb_claims_false_adm_1(call: types.CallbackQuery):
             keyb = types.InlineKeyboardMarkup(row_width=1)
             keyb.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbClaimsFalse-A"))
