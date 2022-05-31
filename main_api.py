@@ -9,16 +9,16 @@ import random
 from telebot import types
 from config import Token, admins
 
-DATABASE_URL = os.environ['DATABASE_URL']
-
-con = psycopg2.connect(DATABASE_URL, sslmode='require')
-# con = psycopg2.connect(
-#     database="postgres",
-#     user="postgres",
-#     password="gs",
-#     host="127.0.0.1",
-#     port="5432"
-# )
+# DATABASE_URL = os.environ['DATABASE_URL']
+#
+# con = psycopg2.connect(DATABASE_URL, sslmode='require')
+con = psycopg2.connect(
+    database="postgres",
+    user="postgres",
+    password="gs",
+    host="127.0.0.1",
+    port="5432"
+)
 cur = con.cursor()
 
 bot = telebot.TeleBot(Token)
@@ -28,7 +28,7 @@ cur.execute(f'''CREATE TABLE IF NOT EXISTS events
                                  Name TEXT,
                                  Text TEXT,
                                  ImgName TEXT, 
-                                 Price INT);''')
+                                 Price TEXT);''')
 con.commit()
 cur.execute(f'''CREATE TABLE IF NOT EXISTS claims
                                  (Id TEXT,
@@ -82,21 +82,27 @@ def start(message):
         for i in range(len(rows)):
             EventsNames += f'{rows[i][1]}\n'
         buttons = [
-            types.InlineKeyboardButton(text="Прогулки", callback_data="ClbEvents"),
+            types.InlineKeyboardButton(text="Прайс", callback_data="ClbEvents"),
             types.InlineKeyboardButton(text="Помощь", callback_data="ClbHelp"),
             types.InlineKeyboardButton(text="Мои заявки", callback_data="ClbClaims")
         ]
         keyboard = types.InlineKeyboardMarkup(row_width=1)
         keyboard.add(*buttons)
-        bot.send_message(message.chat.id, f'👋🏻 <b>Приветствую! Я GAGRASUPbot.</b>'
-                             f'\n\nПредлагаем вашему вниманию ощутить себя сакурой на сапах!'
-                             f'\n\nStand Up Paddle - так полностью звучит и его перевод. История появления сапов. Он подойдёт как для подростков так и для детей, даже для самых юных серферов, ведь плавать на нем совсем не сложно'
-                             f'\n\nПредлагаем вам покататься на лучших сапах Bombitto, Stormline и др.'
-                             f'\n\nДанный вид безопасен. Мы вам выдаём водонепроницаемые чехлы для телефонов, спасательные жилеты 🦺.'
-                             f'\n\nНа сапе можно уместить груз, ведь для этого есть специальный кармашек.'
-                             f'\n\nНаши услуги:\n{EventsNames}'
-                             f'\nИндивидуальные туры на сапах на Рицу, каньон Хашупсе, реку Мчишта, Белые скалы'
-                             f'\n\nЕсли хотите вы определились с прогулкой или хотите узнать более подробно про каждую прогулку нажмите на «ПРОГУЛКИ»', reply_markup=keyboard)
+        bot.send_message(message.chat.id, f' 👋🏻 <b>Приветствую! Я GAGRASUPbot.</b>'
+                                          f' Откройте для себя новый увлекательный мир морских прогулок. '
+                                          f'Ознакомьтесь с нашим предложением и выберите для себя самое лучшее'
+                                          f'\n\n <b>Сапбординг</b> <em>— именно тот вид активности, который '
+                                          f'понравится абсолютно всем, это по-настоящему универсальный вид '
+                                          f'активного отдыха, который по душе и взрослым, и детям. Многие хотят '
+                                          f'просто кататься по морю, по реке, встречать рассветы и загорать. '
+                                          f'\nНикакого экстрима.</em>'
+                                          f'\n\nИНСТРУКТАЖ И БЕЗОПАСНОСТЬ'
+                                          f'\n У нас только качественные и брендовые сапборды Stormline, Bombitto и другие.'
+                                          f'\n\n Гид проводит обязательный инструктаж перед сплавом, выдает спасательные '
+                                          f'жилеты, водонепроницаемые чехлы для телефонов. '
+                                          f'\n\n <em>*При неблагоприятных климатических условиях возможен перенос прогулки</em>'
+                                          f'\n\n<b>ПРОКАТ • ПРОГУЛКИ • ИНДИВИДУАЛЬНЫЕ ТУРЫ</b>'
+                                          f'\n\n<code>нажмите «Прайс» и выберите прогулку</code>', parse_mode='html', reply_markup=keyboard)
 
 
 @bot.message_handler(func=lambda message: dbworker.get_current_state(message.chat.id) == config.States.SendClaim.value)
@@ -184,14 +190,22 @@ def user_age(message):
     key = types.InlineKeyboardMarkup(row_width=1)
     key.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbEvents-A"))
     bot.send_message(message.chat.id, f'Мероприятие успешно создано!!!'
-                         f'\n\nНазвание: {new_event[message.chat.id, "name"]}'
+                         f'\n\nНазвание кнопки: {new_event[message.chat.id, "name"]}'
                          f'\nОписание: {new_event[message.chat.id, "text"]}'
-                         f'\nЦена: {new_event[message.chat.id, "price"]}', reply_markup=key)
+                         f'\nЦена: {new_event[message.chat.id, "price"]}₽', reply_markup=key)
     dbworker.set_state(message.chat.id, config.States.S_START.value)
 
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_inline(call):
+    cur.execute(f'''CREATE TABLE IF NOT EXISTS p{call.message.chat.id}
+                                                                 (Name TEXT,
+                                                                 Date TEXT,
+                                                                 State TEXT,
+                                                                 NameUser TEXT, 
+                                                                 Price INT, 
+                                                                 AnswerAdmin TEXT);''')
+    con.commit()
     if call.data == 'ClbStart':
         if call.message.chat.id in admins:
             buttons = [
@@ -211,22 +225,28 @@ def callback_inline(call):
             for i in range(len(rows)):
                 EventsNames += f'{rows[i][1]}\n'
             buttons = [
-                types.InlineKeyboardButton(text="Прогулки", callback_data="ClbEvents"),
+                types.InlineKeyboardButton(text="Прайс", callback_data="ClbEvents"),
                 types.InlineKeyboardButton(text="Помощь", callback_data="ClbHelp"),
                 types.InlineKeyboardButton(text="Мои заявки", callback_data="ClbClaims")
             ]
             keyboard = types.InlineKeyboardMarkup(row_width=1)
             keyboard.add(*buttons)
             bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                                  text=f'👋🏻 <b>Приветствую! Я GAGRASUPbot.</b>'
-                                         f'\n\nПредлагаем вашему вниманию ощутить себя сакурой на сапах!'
-                                         f'\n\nStand Up Paddle - так полностью звучит и его перевод. История появления сапов. Он подойдёт как для подростков так и для детей, даже для самых юных серферов, ведь плавать на нем совсем не сложно'
-                                         f'\n\nПредлагаем вам покататься на лучших сапах Bombitto, Stormline и др.'
-                                         f'\n\nДанный вид безопасен. Мы вам выдаём водонепроницаемые чехлы для телефонов, спасательные жилеты 🦺.'
-                                         f'\n\nНа сапе можно уместить груз, ведь для этого есть специальный кармашек.'
-                                         f'\n\nНаши услуги:\n{EventsNames}'
-                                         f'\nИндивидуальные туры на сапах на Рицу, каньон Хашупсе, реку Мчишта, Белые скалы'
-                                         f'\n\nЕсли хотите вы определились с прогулкой или хотите узнать более подробно про каждую прогулку нажмите на «ПРОГУЛКИ»', reply_markup=keyboard)
+                                  text=f' 👋🏻 <b>Приветствую! Я GAGRASUPbot.</b>'
+                                          f' Откройте для себя новый увлекательный мир морских прогулок. '
+                                          f'Ознакомьтесь с нашим предложением и выберите для себя самое лучшее'
+                                          f'\n\n <b>Сапбординг</b> <em>— именно тот вид активности, который '
+                                          f'понравится абсолютно всем, это по-настоящему универсальный вид '
+                                          f'активного отдыха, который по душе и взрослым, и детям. Многие хотят '
+                                          f'просто кататься по морю, по реке, встречать рассветы и загорать. '
+                                          f'\nНикакого экстрима.</em>'
+                                          f'\n\nИНСТРУКТАЖ И БЕЗОПАСНОСТЬ'
+                                          f'\n У нас только качественные и брендовые сапборды Stormline, Bombitto и другие.'
+                                          f'\n\n Гид проводит обязательный инструктаж перед сплавом, выдает спасательные '
+                                          f'жилеты, водонепроницаемые чехлы для телефонов. '
+                                          f'\n\n <em>*При неблагоприятных климатических условиях возможен перенос прогулки</em>'
+                                          f'\n\n<b>ПРОКАТ • ПРОГУЛКИ • ИНДИВИДУАЛЬНЫЕ ТУРЫ</b>'
+                                          f'\n\n<code>нажмите «Прайс» и выберите прогулку</code>', parse_mode='html', reply_markup=keyboard)
 
     if call.data == 'ClbEvents':
         cur.execute("SELECT * FROM events")
@@ -237,7 +257,7 @@ def callback_inline(call):
         keyboard.add(*buttons)
         keyboard.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbStart"))
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                                  text='Выберите название прогулки:', reply_markup=keyboard)
+                                  text='<b>ПРОГУЛКИ. Выберите подходящий вариант:</b>', parse_mode='html', reply_markup=keyboard)
 
 
     cur.execute("SELECT * FROM events")
@@ -248,9 +268,8 @@ def callback_inline(call):
             key.add(types.InlineKeyboardButton(text=f"Подать заявку", callback_data=f"ClbEventsSend"),
                     types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbEvents"))
             bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                                  text=f'<b>{rows_events[i][1]}</b>'
-                                       f'\n\n{rows_events[i][2]}'
-                                       f'\n\nЦена: {rows_events[i][4]}', reply_markup=key)
+                                  text=f'{rows_events[i][2]}'
+                                       f'\n\n<b>Цена: {rows_events[i][4]}₽</b>', parse_mode='html', reply_markup=key)
 
         if call.data == f"ClbEventsSend":
             date = datetime.datetime.now()
@@ -271,11 +290,11 @@ def callback_inline(call):
                 claim_p[call.message.chat.id, 'price_event'] = rows_events[i][4]
 
             else:
-                key = types.InlineKeyboardMarkup(row_width=1)
-                key.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbStart"))
+                keyss = types.InlineKeyboardMarkup(row_width=1)
+                keyss.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbStart"))
                 bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                                       text='Заявка повторно быть подана не может! Второй раз подать заявку вы сможете только завтра!',
-                                      reply_markup=key)
+                                      reply_markup=keyss)
 
 
         if call.data == f"ClbEvents{rows_events[i][0].split()[0]}_{rows_events[i][0].split()[1]}-A":
@@ -284,9 +303,8 @@ def callback_inline(call):
                                                callback_data=f"ClbDelEvent{rows_events[i][0].split()[0]}_{rows_events[i][0].split()[1]}"),
                     types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbEvents-A"))
             bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                                  text=f'<b>{rows_events[i][1]}</b>'
-                                         f'\n\n{rows_events[i][2]}'
-                                         f'\n\nЦена: {rows_events[i][4]}', parse_mode='html', reply_markup=key)
+                                  text=f'{rows_events[i][2]}'
+                                         f'\n\n<b>Цена: {rows_events[i][4]}₽</b>', parse_mode='html', reply_markup=key)
 
         if call.data == f"ClbDelEvent{rows_events[i][0].split()[0]}_{rows_events[i][0].split()[1]}":
             cur.execute(f'''DELETE FROM events WHERE Id = '{rows_events[i][0]}';''')
@@ -313,15 +331,15 @@ def callback_inline(call):
     rows_claims_user = cur.fetchall()
     for i in range(len(rows_claims_user)):
         if call.data == f"ClbEvents{rows_claims_user[i][1].split()[0]}_{rows_claims_user[i][1].split()[1]}":
-            key = types.InlineKeyboardMarkup(row_width=1)
-            key.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbClaims"))
+            keydpl = types.InlineKeyboardMarkup(row_width=1)
+            keydpl.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbClaims"))
             bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                                   text=f'<b>{rows_claims_user[i][0]}</b>'
                                        f'\nДата: {".".join(rows_claims_user[i][1].split()[0].split("-")[::-1])}'
                                        f'\nВремя: {":".join(rows_claims_user[i][1].split()[1].split(":")[0:2])}'
                                        f'\n\nСтатус: {rows_claims_user[i][2]}'
                                        f'\nЦена: {rows_claims_user[i][4]}'
-                                       f'\n\nСообщение от администратора: {rows_claims_user[i][5]}', parse_mode='html', reply_markup=key)
+                                       f'\n\nСообщение от администратора: {rows_claims_user[i][5]}', parse_mode='html', reply_markup=keydpl)
 
 
     if call.data == 'ClbSendMessage':
