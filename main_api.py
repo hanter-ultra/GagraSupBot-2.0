@@ -9,16 +9,16 @@ import random
 from telebot import types
 from config import Token, admins
 
-# DATABASE_URL = os.environ['DATABASE_URL']
-#
-# con = psycopg2.connect(DATABASE_URL, sslmode='require')
-con = psycopg2.connect(
-    database="postgres",
-    user="postgres",
-    password="gs",
-    host="127.0.0.1",
-    port="5432"
-)
+DATABASE_URL = os.environ['DATABASE_URL']
+
+con = psycopg2.connect(DATABASE_URL, sslmode='require')
+# con = psycopg2.connect(
+#     database="postgres",
+#     user="postgres",
+#     password="gs",
+#     host="127.0.0.1",
+#     port="5432"
+# )
 cur = con.cursor()
 
 bot = telebot.TeleBot(Token)
