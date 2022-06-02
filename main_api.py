@@ -105,6 +105,67 @@ def start(message):
                                           f'\n\n<code>нажмите «Прайс» и выберите прогулку</code>', parse_mode='html', reply_markup=keyboard)
 
 
+@bot.message_handler(commands=['price_list'])
+def price_list(message):
+    cur.execute(f'''CREATE TABLE IF NOT EXISTS p{message.chat.id}
+                                                                 (Name TEXT,
+                                                                 Date TEXT,
+                                                                 State TEXT,
+                                                                 NameUser TEXT, 
+                                                                 Price INT, 
+                                                                 AnswerAdmin TEXT);''')
+    con.commit()
+    cur.execute("SELECT * FROM events")
+    rows = cur.fetchall()
+    buttons = [types.InlineKeyboardButton(text=f"{rows[i][1]}", callback_data=f"ClbEvents{rows[i][0]}") for i in
+               range(len(rows))]
+    keyboard = types.InlineKeyboardMarkup(row_width=1)
+    keyboard.add(*buttons)
+    keyboard.add(types.InlineKeyboardButton(text=f"Главное меню", callback_data=f"ClbStart"))
+    bot.send_message(chat_id=message.chat.id, text='<b>ПРОГУЛКИ. Выберите подходящий вариант:</b>', parse_mode='html',
+                          reply_markup=keyboard)
+
+
+@bot.message_handler(commands=['help'])
+def help(message):
+    cur.execute(f'''CREATE TABLE IF NOT EXISTS p{message.chat.id}
+                                                                     (Name TEXT,
+                                                                     Date TEXT,
+                                                                     State TEXT,
+                                                                     NameUser TEXT, 
+                                                                     Price INT, 
+                                                                     AnswerAdmin TEXT);''')
+    con.commit()
+    keyboard = types.InlineKeyboardMarkup(row_width=1)
+    keyboard.add(types.InlineKeyboardButton(text='WhatsApp', url='https://wa.me/+79407120912'),
+                 types.InlineKeyboardButton(text='Telegram', url='tg://resolve?domain=simeon_kolchin'),
+                 types.InlineKeyboardButton(text='Instagram', url='tg://resolve?domain=simeon_kolchin'),
+                 types.InlineKeyboardButton(text=f"Главное меню", callback_data=f"ClbStart"))
+    bot.send_message(chat_id=message.chat.id, text='Вы можете написать нам:', reply_markup=keyboard)
+
+
+@bot.message_handler(commands=['my_claims'])
+def my_claims(message):
+    cur.execute(f'''CREATE TABLE IF NOT EXISTS p{message.chat.id}
+                                                                     (Name TEXT,
+                                                                     Date TEXT,
+                                                                     State TEXT,
+                                                                     NameUser TEXT, 
+                                                                     Price INT, 
+                                                                     AnswerAdmin TEXT);''')
+    con.commit()
+    cur.execute(f"SELECT * FROM p{message.chat.id}")
+    rows = cur.fetchall()
+    buttons = [types.InlineKeyboardButton(text=f"{rows[i][0]} ({'.'.join(rows[i][1].split()[0].split('-')[::-1])})",
+                                          callback_data=f"ClbEvents{rows[i][1].split()[0]}_{rows[i][1].split()[1]}")
+               for i in
+               range(len(rows))]
+    keyboard = types.InlineKeyboardMarkup(row_width=1)
+    keyboard.add(*buttons)
+    keyboard.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbStart"))
+    bot.send_message(chat_id=message.chat.id, text='Выберите название прогулки:', reply_markup=keyboard)
+
+
 # Добавление заявки пользователя ----- Добавление заявки пользователя ----- Добавление заявки пользователя ----- Добавление заявки пользователя
 @bot.message_handler(func=lambda message: dbworker.get_current_state(message.chat.id) == config.States.SendClaim.value)
 def user_age(message):
