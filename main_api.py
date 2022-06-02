@@ -9,16 +9,16 @@ import random
 from telebot import types
 from config import Token, admins
 
-DATABASE_URL = os.environ['DATABASE_URL']
-
-con = psycopg2.connect(DATABASE_URL, sslmode='require')
-# con = psycopg2.connect(
-#     database="postgres",
-#     user="postgres",
-#     password="gs",
-#     host="127.0.0.1",
-#     port="5432"
-# )
+# DATABASE_URL = os.environ['DATABASE_URL']
+#
+# con = psycopg2.connect(DATABASE_URL, sslmode='require')
+con = psycopg2.connect(
+    database="postgres",
+    user="postgres",
+    password="gs",
+    host="127.0.0.1",
+    port="5432"
+)
 cur = con.cursor()
 
 bot = telebot.TeleBot(Token)
@@ -105,6 +105,7 @@ def start(message):
                                           f'\n\n<code>нажмите «Прайс» и выберите прогулку</code>', parse_mode='html', reply_markup=keyboard)
 
 
+# Добавление заявки пользователя ----- Добавление заявки пользователя ----- Добавление заявки пользователя ----- Добавление заявки пользователя
 @bot.message_handler(func=lambda message: dbworker.get_current_state(message.chat.id) == config.States.SendClaim.value)
 def user_age(message):
     date = claim_p[message.chat.id, 'date']
@@ -151,6 +152,7 @@ def user_age(message):
     dbworker.set_state(message.chat.id, config.States.S_START.value)
 
 
+# Сообщение администратора ----- Сообщение администратора ----- Сообщение администратора ----- Сообщение администратора ----- Сообщение администратора
 @bot.message_handler(func=lambda message: dbworker.get_current_state(message.chat.id) == config.States.WFMesT.value)
 def user_age(message):
     text = message.text
@@ -163,6 +165,7 @@ def user_age(message):
     dbworker.set_state(message.chat.id, config.States.S_START.value)
 
 
+# Новое мероприятие_название ----- Новое мероприятие_название ----- Новое мероприятие_название ----- Новое мероприятие_название ----- Новое мероприятие_название
 @bot.message_handler(func=lambda message: dbworker.get_current_state(message.chat.id) == config.States.NewEventName.value)
 def user_age(message):
     new_event[message.chat.id, 'name'] = message.text
@@ -170,6 +173,7 @@ def user_age(message):
     dbworker.set_state(message.chat.id, config.States.NewEventText.value)
 
 
+# Новое мероприятие_описание ----- Новое мероприятие_описание ----- Новое мероприятие_описание ----- Новое мероприятие_описание ----- Новое мероприятие_описание
 @bot.message_handler(func=lambda message: dbworker.get_current_state(message.chat.id) == config.States.NewEventText.value)
 def user_age(message):
     new_event[message.chat.id, 'text'] = message.text
@@ -177,6 +181,7 @@ def user_age(message):
     dbworker.set_state(message.chat.id, config.States.NewEventPrice.value)
 
 
+# Новое мероприятие_цена ----- Новое мероприятие_цена ----- Новое мероприятие_цена ----- Новое мероприятие_цена ----- Новое мероприятие_цена
 @bot.message_handler(func=lambda message: dbworker.get_current_state(message.chat.id) == config.States.NewEventPrice.value)
 def user_age(message):
     new_event[message.chat.id, 'price'] = message.text
@@ -196,6 +201,7 @@ def user_age(message):
     dbworker.set_state(message.chat.id, config.States.S_START.value)
 
 
+# Callback ----- Callback ----- Callback ----- Callback ----- Callback
 @bot.callback_query_handler(func=lambda call: True)
 def callback_inline(call):
     cur.execute(f'''CREATE TABLE IF NOT EXISTS p{call.message.chat.id}
@@ -206,6 +212,9 @@ def callback_inline(call):
                                                                  Price INT, 
                                                                  AnswerAdmin TEXT);''')
     con.commit()
+
+
+    # Старт callback ----- Старт callback ----- Старт callback ----- Старт callback ----- Старт callback
     if call.data == 'ClbStart':
         if call.message.chat.id in admins:
             buttons = [
@@ -248,6 +257,8 @@ def callback_inline(call):
                                           f'\n\n<b>ПРОКАТ • ПРОГУЛКИ • ИНДИВИДУАЛЬНЫЕ ТУРЫ</b>'
                                           f'\n\n<code>нажмите «Прайс» и выберите прогулку</code>', parse_mode='html', reply_markup=keyboard)
 
+
+    # Показать мероприятия для пользователя ----- Показать мероприятия для пользователя ----- Показать мероприятия для пользователя
     if call.data == 'ClbEvents':
         cur.execute("SELECT * FROM events")
         rows = cur.fetchall()
@@ -260,6 +271,7 @@ def callback_inline(call):
                                   text='<b>ПРОГУЛКИ. Выберите подходящий вариант:</b>', parse_mode='html', reply_markup=keyboard)
 
 
+    # Показать мероприятия для пользователя вывод ----- Показать мероприятия для пользователя вывод ----- Показать мероприятия для пользователя вывод
     cur.execute("SELECT * FROM events")
     rows_events = cur.fetchall()
     for i in range(len(rows_events)):
@@ -271,6 +283,8 @@ def callback_inline(call):
                                   text=f'{rows_events[i][2]}'
                                        f'\n\n<b>Цена: {rows_events[i][4]}₽</b>', parse_mode='html', reply_markup=key)
 
+
+        # Подать заявку ----- Подать заявку ----- Подать заявку ----- Подать заявку ----- Подать заявку
         if call.data == f"ClbEventsSend":
             date = datetime.datetime.now()
             user_name = call.message.chat.username
@@ -297,6 +311,7 @@ def callback_inline(call):
                                       reply_markup=keyss)
 
 
+        # Все мероприятия вывод ----- Все мероприятия вывод ----- Все мероприятия вывод ----- Все мероприятия вывод ----- Все мероприятия вывод
         if call.data == f"ClbEvents{rows_events[i][0].split()[0]}_{rows_events[i][0].split()[1]}-A":
             key = types.InlineKeyboardMarkup(row_width=1)
             key.add(types.InlineKeyboardButton(text=f"Удалить",
@@ -306,6 +321,8 @@ def callback_inline(call):
                                   text=f'{rows_events[i][2]}'
                                          f'\n\n<b>Цена: {rows_events[i][4]}₽</b>', parse_mode='html', reply_markup=key)
 
+
+        # Удалить мероприятие ----- Удалить мероприятие ----- Удалить мероприятие ----- Удалить мероприятие ----- Удалить мероприятие
         if call.data == f"ClbDelEvent{rows_events[i][0].split()[0]}_{rows_events[i][0].split()[1]}":
             cur.execute(f'''DELETE FROM events WHERE Id = '{rows_events[i][0]}';''')
             con.commit()
@@ -314,6 +331,9 @@ def callback_inline(call):
             bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                                   text='Мероприятие удалено!', reply_markup=key)
 
+
+
+    # Все заявки для пользователя ----- Все заявки для пользователя ----- Все заявки для пользователя ----- Все заявки для пользователя ----- Все заявки для пользователя
     if call.data == 'ClbClaims':
         cur.execute(f"SELECT * FROM p{call.message.chat.id}")
         rows = cur.fetchall()
@@ -327,6 +347,8 @@ def callback_inline(call):
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                               text='Выберите название прогулки:', reply_markup=keyboard)
 
+
+    # Все заявки для пользователя вывод ----- Все заявки для пользователя вывод ----- Все заявки для пользователя вывод ----- Все заявки для пользователя вывод ----- Все заявки для пользователя вывод
     cur.execute(f"SELECT * FROM p{call.message.chat.id}")
     rows_claims_user = cur.fetchall()
     for i in range(len(rows_claims_user)):
@@ -342,12 +364,14 @@ def callback_inline(call):
                                        f'\n\nСообщение от администратора: {rows_claims_user[i][5]}', parse_mode='html', reply_markup=keydpl)
 
 
+    # Сообщение администратора ----- Сообщение администратора ----- Сообщение администратора ----- Сообщение администратора ----- Сообщение администратора
     if call.data == 'ClbSendMessage':
         dbworker.set_state(call.message.chat.id, config.States.WFMesT.value)
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                               text='Напишите сообщение...')
 
 
+    # Прайс / мероприятия ----- Прайс / мероприятия ----- Прайс / мероприятия ----- Прайс / мероприятия ----- Прайс / мероприятия
     if call.data == 'ClbEvents-A':
         cur.execute("SELECT * FROM events")
         rows = cur.fetchall()
@@ -364,21 +388,32 @@ def callback_inline(call):
             text = 'К сожалению мероприятий пока нет!'
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                               text=text, reply_markup=keyboard)
+        dbworker.set_state(call.message.chat.id, config.States.S_START.value)
 
+
+    # Новое мероприятие ----- Новое мероприятие ----- Новое мероприятие ----- Новое мероприятие ----- Новое мероприятие
     if call.data == 'ClbNewEvent-A':
+        keyboard = types.InlineKeyboardMarkup(row_width=1)
+        keyboard.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbEvents-A"))
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                              text='Напишите название мероприятия...')
+                              text='Напишите название мероприятия...', reply_markup=keyboard)
         dbworker.set_state(call.message.chat.id, config.States.NewEventName.value)
 
+
+    # Виды заявок ----- Виды заявок ----- Виды заявок ----- Виды заявок ----- Виды заявок
     if call.data == 'ClbClaims-A':
         keyboard = types.InlineKeyboardMarkup(row_width=1)
-        keyboard.add(types.InlineKeyboardButton(text=f"На рассмотрении", callback_data=f"ClbClaimsTrue-A"),
-                     types.InlineKeyboardButton(text=f"Выполненные", callback_data=f"ClbClaimsFalse-A"),
+        keyboard.add(types.InlineKeyboardButton(text=f"На рассмотрении", callback_data=f"ClbClaimsTrue_0-A"),
+                     types.InlineKeyboardButton(text=f"Одобренные", callback_data=f"ClbClaimsTrue_2-A"),
+                     types.InlineKeyboardButton(text=f"Выполненные", callback_data=f"ClbClaimsFalse_1-A"),
+                     types.InlineKeyboardButton(text=f"Отклоненные", callback_data=f"ClbClaimsTrue_3-A"),
                      types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbStart"))
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                               text='Выберите тип заявок:', reply_markup=keyboard)
 
-    if call.data == 'ClbClaimsTrue-A':
+
+    # Виды заявок вывод ----- Виды заявок вывод ----- Виды заявок вывод ----- Виды заявок вывод ----- Виды заявок вывод
+    if call.data == 'ClbClaimsTrue_0-A':
         cur.execute("SELECT * FROM claims")
         rows = cur.fetchall()
         buttons = [types.InlineKeyboardButton(text=f"{rows[i][2]} ({'.'.join(rows[i][3].split()[0].split('-')[::-1])})", callback_data=f"ClbClaimTrue{'_'.join(rows[i][3].split()[0].split('-')[::-1])}_{'_'.join(rows[i][3].split()[1].split(':')[0:2])}-A") for i in
@@ -392,13 +427,12 @@ def callback_inline(call):
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                               text=text, reply_markup=keyboard)
 
-    if call.data == 'ClbClaimsFalse-A':
+
+    if call.data == 'ClbClaimsTrue_2-A':
         cur.execute("SELECT * FROM claims")
         rows = cur.fetchall()
-        buttons = [types.InlineKeyboardButton(text=f"{rows[i][2]} ({rows[i][3].split()[0]})",
-                                              callback_data=f"ClbClaimFalse{rows[i][3].split()[0]}_{rows[i][3].split()[1]}-A")
-                   for i in
-                   range(len(rows)) if rows[i][4] == 'Выполнена']
+        buttons = [types.InlineKeyboardButton(text=f"{rows[i][2]} ({'.'.join(rows[i][3].split()[0].split('-')[::-1])})", callback_data=f"ClbClaimTrue{'_'.join(rows[i][3].split()[0].split('-')[::-1])}_{'_'.join(rows[i][3].split()[1].split(':')[0:2])}-A") for i in
+                range(len(rows)) if rows[i][4] == 'Одобрена']
         keyboard = types.InlineKeyboardMarkup(row_width=1)
         keyboard.add(*buttons)
         keyboard.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbClaims-A"))
@@ -408,15 +442,51 @@ def callback_inline(call):
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                               text=text, reply_markup=keyboard)
 
+
+    if call.data == 'ClbClaimsTrue_3-A':
+        cur.execute("SELECT * FROM claims")
+        rows = cur.fetchall()
+        buttons = [types.InlineKeyboardButton(text=f"{rows[i][2]} ({'.'.join(rows[i][3].split()[0].split('-')[::-1])})", callback_data=f"ClbClaimTrue{'_'.join(rows[i][3].split()[0].split('-')[::-1])}_{'_'.join(rows[i][3].split()[1].split(':')[0:2])}-A") for i in
+                range(len(rows)) if rows[i][4] == 'Отклонена']
+        keyboard = types.InlineKeyboardMarkup(row_width=1)
+        keyboard.add(*buttons)
+        keyboard.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbClaims-A"))
+        text = 'Выберите название прогулки:'
+        if buttons == []:
+            text = 'К сожалению новых заявок пока нет!'
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                              text=text, reply_markup=keyboard)
+
+
+    if call.data == 'ClbClaimsFalse_1-A':
+        cur.execute("SELECT * FROM claims")
+        rows = cur.fetchall()
+        buttons = [types.InlineKeyboardButton(text=f"{rows[i][2]} ({'.'.join(rows[i][3].split()[0].split('-')[::-1])})", callback_data=f"ClbClaimTrue{'_'.join(rows[i][3].split()[0].split('-')[::-1])}_{'_'.join(rows[i][3].split()[1].split(':')[0:2])}-A") for i in
+                range(len(rows)) if rows[i][4] == 'Выполнена']
+        keyboard = types.InlineKeyboardMarkup(row_width=1)
+        keyboard.add(*buttons)
+        keyboard.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbClaims-A"))
+        text = 'Выберите название прогулки:'
+        if buttons == []:
+            text = 'К сожалению новых заявок пока нет!'
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                              text=text, reply_markup=keyboard)
+
+
+    # Вывод заявки ----- Вывод заявки ----- Вывод заявки ----- Вывод заявки ----- Вывод заявки
     cur.execute("SELECT * FROM claims")
     rows_claims = cur.fetchall()
     for i in range(len(rows_claims)):
         if call.data == f"ClbClaimTrue{'_'.join(rows_claims[i][3].split()[0].split('-')[::-1])}_{'_'.join(rows_claims[i][3].split()[1].split(':')[0:2])}-A":
             keyb = types.InlineKeyboardMarkup(row_width=1)
             keyb.add(types.InlineKeyboardButton(text=f"Поставить статус - Выполнена",
-                                                callback_data=f"ClbClaimTrue{rows_claims[i][3].split()[0]}_{rows_claims[i][3].split()[1]}-True-A"),
+                                                callback_data=f"ClbClaimTrue{rows_claims[i][3].split()[0]}_{rows_claims[i][3].split()[1]}-True_1-A"),
+                     types.InlineKeyboardButton(text=f"Поставить статус - Одобрена",
+                                                callback_data=f"ClbClaimTrue{rows_claims[i][3].split()[0]}_{rows_claims[i][3].split()[1]}-True_2-A"),
+                     types.InlineKeyboardButton(text=f"Поставить статус - Отклонена",
+                                               callback_data=f"ClbClaimTrue{rows_claims[i][3].split()[0]}_{rows_claims[i][3].split()[1]}-True_3-A"),
                      types.InlineKeyboardButton(text=f"Написать сообщение к заявке", callback_data=f"ClbSendMessage"),
-                     types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbClaimsTrue-A"))
+                     types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbClaims-A"))
             claim_a['admin_claim_id'] = rows_claims[i][0]
             cur.execute(f"SELECT * FROM p{rows_claims[i][1]} WHERE Date = '{rows_claims[i][3]}'")
             r = cur.fetchall()
@@ -429,31 +499,63 @@ def callback_inline(call):
                                          f'\n\nЦена: {rows_claims[i][6]}'
                                          f'\n\nСообщение администратора: {r[0][5]}'
                                          f'\n\nКомментарий пользователя: {rows_claims[i][7]}', reply_markup=keyb)
-        if call.data == f"ClbClaimTrue{rows_claims[i][3].split()[0]}_{rows_claims[i][3].split()[1]}-True-A":
+
+
+        # Статусы заявок ----- Статусы заявок ----- Статусы заявок ----- Статусы заявок ----- Статусы заявок
+        if call.data == f"ClbClaimTrue{rows_claims[i][3].split()[0]}_{rows_claims[i][3].split()[1]}-True_1-A":
             cur.execute(f'''UPDATE claims SET State = 'Выполнена' WHERE Id = '{rows_claims[i][0]}';''')
             con.commit()
             cur.execute(f'''UPDATE p{rows_claims[i][1]} SET State = 'Выполнена' WHERE Date = '{rows_claims[i][3]}';''')
             con.commit()
             keyb = types.InlineKeyboardMarkup(row_width=1)
-            keyb.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbClaimsTrue-A"))
+            keyb.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbClaims-A"))
+            bot.send_message(rows_claims[i][1], f'Ваша заявка "{rows_claims[i][2]}" от '
+                                                f'{".".join(rows_claims[i][3].split()[0].split("-")[::-1])} '
+                                                f'{":".join(rows_claims[i][3].split()[1].split(":")[0:2])} выполнена!')
             bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                                  text=f'Успешно!', reply_markup=keyb)
+                                  text=f'Успешно! Статус заявки "{rows_claims[i][2]}" от '
+                                                f'{".".join(rows_claims[i][3].split()[0].split("-")[::-1])} '
+                                                f'{":".join(rows_claims[i][3].split()[1].split(":")[0:2])} изменен на "Выполнена"', reply_markup=keyb)
 
-        if call.data == f"ClbClaimFalse{rows_claims[i][3].split()[0]}_{rows_claims[i][3].split()[1]}-A":
+
+        if call.data == f"ClbClaimTrue{rows_claims[i][3].split()[0]}_{rows_claims[i][3].split()[1]}-True_2-A":
+            cur.execute(f'''UPDATE claims SET State = 'Одобрена' WHERE Id = '{rows_claims[i][0]}';''')
+            con.commit()
+            cur.execute(f'''UPDATE p{rows_claims[i][1]} SET State = 'Одобрена' WHERE Date = '{rows_claims[i][3]}';''')
+            con.commit()
             keyb = types.InlineKeyboardMarkup(row_width=1)
-            keyb.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbClaimsFalse-A"))
+            keyb.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbClaims-A"))
+            bot.send_message(rows_claims[i][1], f'Ваша заявка "{rows_claims[i][2]}" от '
+                                                f'{".".join(rows_claims[i][3].split()[0].split("-")[::-1])} '
+                                                f'{":".join(rows_claims[i][3].split()[1].split(":")[0:2])} одобрена!')
             bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                                  text=f'ChatId - {rows_claims[i][1]}'
-                                         f'\n\nНазвание мероприятия: {rows_claims[i][2]}'
-                                         f'\nДата: {rows_claims[i][3]}'
-                                         f'\nСтатус: {rows_claims[i][4]}'
-                                         f'\nИмя пользователя: {rows_claims[i][5]}'
-                                         f'\n\nЦена: {rows_claims[i][6]}', reply_markup=keyb)
+                                  text=f'Успешно! Статус заявки "{rows_claims[i][2]}" от '
+                                                f'{".".join(rows_claims[i][3].split()[0].split("-")[::-1])} '
+                                                f'{":".join(rows_claims[i][3].split()[1].split(":")[0:2])} изменен на "Одобрена"', reply_markup=keyb)
 
+
+        if call.data == f"ClbClaimTrue{rows_claims[i][3].split()[0]}_{rows_claims[i][3].split()[1]}-True_3-A":
+            cur.execute(f'''UPDATE claims SET State = 'Отклонена' WHERE Id = '{rows_claims[i][0]}';''')
+            con.commit()
+            cur.execute(f'''UPDATE p{rows_claims[i][1]} SET State = 'Отклонена' WHERE Date = '{rows_claims[i][3]}';''')
+            con.commit()
+            keyb = types.InlineKeyboardMarkup(row_width=1)
+            keyb.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbClaims-A"))
+            bot.send_message(rows_claims[i][1], f'Ваша заявка "{rows_claims[i][2]}" от '
+                                                f'{".".join(rows_claims[i][3].split()[0].split("-")[::-1])} '
+                                                f'{":".join(rows_claims[i][3].split()[1].split(":")[0:2])} отклонена!')
+            bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                                  text=f'Успешно! Статус заявки "{rows_claims[i][2]}" от '
+                                                f'{".".join(rows_claims[i][3].split()[0].split("-")[::-1])} '
+                                                f'{":".join(rows_claims[i][3].split()[1].split(":")[0:2])} изменен на "Отклонена"', reply_markup=keyb)
+
+
+    # Помощь ----- Помощь ----- Помощь ----- Помощь ----- Помощь
     if call.data == "ClbHelp":
         keyboard = types.InlineKeyboardMarkup(row_width=1)
         keyboard.add(types.InlineKeyboardButton(text='WhatsApp', url='https://wa.me/+79407120912'),
                      types.InlineKeyboardButton(text='Telegram', url='tg://resolve?domain=simeon_kolchin'),
+                     types.InlineKeyboardButton(text='Instagram', url='tg://resolve?domain=simeon_kolchin'),
                      types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbStart"))
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                               text='Вы можете написать нам:', reply_markup=keyboard)

@@ -1,6 +1,6 @@
 from enum import Enum
 
-Token = '5332316874:AAG0dDTY4CMkWXoZs_80Swmc0uuQ_LiFszw'
+Token = '5332316874:AAHNJkx4dGVav73dzDlwS22Th9vU5Px3EIk'
 admins = [993699116, 490371324]
 #490371324
 #993699116
