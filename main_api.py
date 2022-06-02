@@ -169,7 +169,7 @@ def my_claims(message):
 # Добавление заявки пользователя ----- Добавление заявки пользователя ----- Добавление заявки пользователя ----- Добавление заявки пользователя
 @bot.message_handler(func=lambda message: dbworker.get_current_state(message.chat.id) == config.States.SendClaim.value)
 def user_age(message):
-    date = claim_p[message.chat.id, 'date']
+    date = datetime.datetime.now()
     user_name = message.chat.username
     cur.execute(f'''INSERT INTO p{message.chat.id} (Name, Date, State, NameUser, Price, AnswerAdmin) VALUES 
                                                                            ('{claim_p[message.chat.id, 'name_event']}', 
@@ -338,7 +338,7 @@ def callback_inline(call):
     for i in range(len(rows_events)):
         if call.data == f"ClbEvents{rows_events[i][0]}":
             key = types.InlineKeyboardMarkup(row_width=1)
-            key.add(types.InlineKeyboardButton(text=f"Подать заявку", callback_data=f"ClbEventsSend"),
+            key.add(types.InlineKeyboardButton(text=f"Подать заявку", callback_data=f"ClbEventsSend{rows_events[i][0]}"),
                     types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbEvents"))
             bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                                   text=f'{rows_events[i][2]}'
@@ -346,9 +346,7 @@ def callback_inline(call):
 
 
         # Подать заявку ----- Подать заявку ----- Подать заявку ----- Подать заявку ----- Подать заявку
-        if call.data == f"ClbEventsSend":
-            date = datetime.datetime.now()
-            user_name = call.message.chat.username
+        if call.data == f"ClbEventsSend{rows_events[i][0]}":
             cur.execute(f"SELECT * FROM p{call.message.chat.id}")
             row_sel = cur.fetchall()
             k = 1
@@ -360,7 +358,6 @@ def callback_inline(call):
                 dbworker.set_state(call.message.chat.id, config.States.SendClaim.value)
                 bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                                       text='Напишите сообщение к заявке и укажите в нем контактные данные (номер телефона/ссылка на телеграм/ссылка на страницу вк)...')
-                claim_p[call.message.chat.id, 'date'] = date
                 claim_p[call.message.chat.id, 'name_event'] = rows_events[i][1]
                 claim_p[call.message.chat.id, 'price_event'] = rows_events[i][4]
 
