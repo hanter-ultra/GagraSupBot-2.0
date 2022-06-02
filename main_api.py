@@ -400,13 +400,17 @@ def callback_inline(call):
         rows = cur.fetchall()
         buttons = [types.InlineKeyboardButton(text=f"{rows[i][0]} ({'.'.join(rows[i][1].split()[0].split('-')[::-1])})",
                                               callback_data=f"ClbEvents{rows[i][1].split()[0]}_{rows[i][1].split()[1]}")
-                   for i in
-                   range(len(rows))]
+                   for i in range(len(rows))]
         keyboard = types.InlineKeyboardMarkup(row_width=1)
         keyboard.add(*buttons)
+        text = 'Выберите название прогулки:'
+        if buttons == []:
+            text = 'К сожалению у вас пока нет заявок((( ' \
+                   '\n\n<code>Чтобы подать заявку нажмите «Прайс» и выберите прогулку</code>"'
+            keyboard.add(types.InlineKeyboardButton(text=f"Прайс", callback_data=f"ClbEvents"))
         keyboard.add(types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbStart"))
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                              text='Выберите название прогулки:', reply_markup=keyboard)
+                              text=text, parse_mode='html', reply_markup=keyboard)
 
 
     # Все заявки для пользователя вывод ----- Все заявки для пользователя вывод ----- Все заявки для пользователя вывод ----- Все заявки для пользователя вывод ----- Все заявки для пользователя вывод
