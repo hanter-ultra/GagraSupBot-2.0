@@ -162,7 +162,7 @@ def my_claims(message):
                range(len(rows))]
     keyboard = types.InlineKeyboardMarkup(row_width=1)
     keyboard.add(*buttons)
-    keyboard.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbStart"))
+    keyboard.add(types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbStart"))
     bot.send_message(chat_id=message.chat.id, text='Выберите название прогулки:', reply_markup=keyboard)
 
 
@@ -194,7 +194,7 @@ def user_age(message):
                                                                                        '{ttt}');''')
     con.commit()
     key = types.InlineKeyboardMarkup(row_width=1)
-    key.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbStart"))
+    key.add(types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbStart"))
     keya = types.InlineKeyboardMarkup(row_width=1)
     keya.add(types.InlineKeyboardButton(text=f"Написать", callback_data=f"ClbSendMessage"))
     bot.send_message(message.chat.id,
@@ -254,7 +254,7 @@ def user_age(message):
                                                             '{new_event[message.chat.id, "price"]}');''')
     con.commit()
     key = types.InlineKeyboardMarkup(row_width=1)
-    key.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbEvents-A"))
+    key.add(types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbEvents-A"))
     bot.send_message(message.chat.id, f'Мероприятие успешно создано!!!'
                          f'\n\nНазвание кнопки: {new_event[message.chat.id, "name"]}'
                          f'\nОписание: {new_event[message.chat.id, "text"]}'
@@ -327,7 +327,7 @@ def callback_inline(call):
                    range(len(rows))]
         keyboard = types.InlineKeyboardMarkup(row_width=1)
         keyboard.add(*buttons)
-        keyboard.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbStart"))
+        keyboard.add(types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbStart"))
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                                   text='<b>ПРОГУЛКИ. Выберите подходящий вариант:</b>', parse_mode='html', reply_markup=keyboard)
 
@@ -339,7 +339,7 @@ def callback_inline(call):
         if call.data == f"ClbEvents{rows_events[i][0]}":
             key = types.InlineKeyboardMarkup(row_width=1)
             key.add(types.InlineKeyboardButton(text=f"Подать заявку", callback_data=f"ClbEventsSend"),
-                    types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbEvents"))
+                    types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbEvents"))
             bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                                   text=f'{rows_events[i][2]}'
                                        f'\n\n<b>Цена: {rows_events[i][4]}₽</b>', parse_mode='html', reply_markup=key)
@@ -366,7 +366,7 @@ def callback_inline(call):
 
             else:
                 keyss = types.InlineKeyboardMarkup(row_width=1)
-                keyss.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbStart"))
+                keyss.add(types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbStart"))
                 bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                                       text='Заявка повторно быть подана не может! Второй раз подать заявку вы сможете только завтра!',
                                       reply_markup=keyss)
@@ -377,7 +377,7 @@ def callback_inline(call):
             key = types.InlineKeyboardMarkup(row_width=1)
             key.add(types.InlineKeyboardButton(text=f"Удалить",
                                                callback_data=f"ClbDelEvent{rows_events[i][0].split()[0]}_{rows_events[i][0].split()[1]}"),
-                    types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbEvents-A"))
+                    types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbEvents-A"))
             bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                                   text=f'{rows_events[i][2]}'
                                          f'\n\n<b>Цена: {rows_events[i][4]}₽</b>', parse_mode='html', reply_markup=key)
@@ -388,7 +388,7 @@ def callback_inline(call):
             cur.execute(f'''DELETE FROM events WHERE Id = '{rows_events[i][0]}';''')
             con.commit()
             key = types.InlineKeyboardMarkup(row_width=1)
-            key.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbEvents-A"))
+            key.add(types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbEvents-A"))
             bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                                   text='Мероприятие удалено!', reply_markup=key)
 
@@ -404,7 +404,7 @@ def callback_inline(call):
                    range(len(rows))]
         keyboard = types.InlineKeyboardMarkup(row_width=1)
         keyboard.add(*buttons)
-        keyboard.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbStart"))
+        keyboard.add(types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbStart"))
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                               text='Выберите название прогулки:', reply_markup=keyboard)
 
@@ -415,7 +415,7 @@ def callback_inline(call):
     for i in range(len(rows_claims_user)):
         if call.data == f"ClbEvents{rows_claims_user[i][1].split()[0]}_{rows_claims_user[i][1].split()[1]}":
             keydpl = types.InlineKeyboardMarkup(row_width=1)
-            keydpl.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbClaims"))
+            keydpl.add(types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbClaims"))
             bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                                   text=f'<b>{rows_claims_user[i][0]}</b>'
                                        f'\nДата: {".".join(rows_claims_user[i][1].split()[0].split("-")[::-1])}'
@@ -443,7 +443,7 @@ def callback_inline(call):
         keyboard = types.InlineKeyboardMarkup(row_width=1)
         keyboard.add(*buttons)
         keyboard.add(types.InlineKeyboardButton(text=f"Создать мероприятие", callback_data=f"ClbNewEvent-A"),
-                     types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbStart"))
+                     types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbStart"))
         text = 'Выберите название прогулки:'
         if buttons == []:
             text = 'К сожалению мероприятий пока нет!'
@@ -455,7 +455,7 @@ def callback_inline(call):
     # Новое мероприятие ----- Новое мероприятие ----- Новое мероприятие ----- Новое мероприятие ----- Новое мероприятие
     if call.data == 'ClbNewEvent-A':
         keyboard = types.InlineKeyboardMarkup(row_width=1)
-        keyboard.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbEvents-A"))
+        keyboard.add(types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbEvents-A"))
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                               text='Напишите название мероприятия...', reply_markup=keyboard)
         dbworker.set_state(call.message.chat.id, config.States.NewEventName.value)
@@ -468,7 +468,7 @@ def callback_inline(call):
                      types.InlineKeyboardButton(text=f"Одобренные", callback_data=f"ClbClaimsTrue_2-A"),
                      types.InlineKeyboardButton(text=f"Выполненные", callback_data=f"ClbClaimsFalse_1-A"),
                      types.InlineKeyboardButton(text=f"Отклоненные", callback_data=f"ClbClaimsTrue_3-A"),
-                     types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbStart"))
+                     types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbStart"))
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                               text='Выберите тип заявок:', reply_markup=keyboard)
 
@@ -481,7 +481,7 @@ def callback_inline(call):
                 range(len(rows)) if rows[i][4] == 'На рассмотрении']
         keyboard = types.InlineKeyboardMarkup(row_width=1)
         keyboard.add(*buttons)
-        keyboard.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbClaims-A"))
+        keyboard.add(types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbClaims-A"))
         text = 'Выберите название прогулки:'
         if buttons == []:
             text = 'К сожалению новых заявок пока нет!'
@@ -496,7 +496,7 @@ def callback_inline(call):
                 range(len(rows)) if rows[i][4] == 'Одобрена']
         keyboard = types.InlineKeyboardMarkup(row_width=1)
         keyboard.add(*buttons)
-        keyboard.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbClaims-A"))
+        keyboard.add(types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbClaims-A"))
         text = 'Выберите название прогулки:'
         if buttons == []:
             text = 'К сожалению новых заявок пока нет!'
@@ -511,7 +511,7 @@ def callback_inline(call):
                 range(len(rows)) if rows[i][4] == 'Отклонена']
         keyboard = types.InlineKeyboardMarkup(row_width=1)
         keyboard.add(*buttons)
-        keyboard.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbClaims-A"))
+        keyboard.add(types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbClaims-A"))
         text = 'Выберите название прогулки:'
         if buttons == []:
             text = 'К сожалению новых заявок пока нет!'
@@ -526,7 +526,7 @@ def callback_inline(call):
                 range(len(rows)) if rows[i][4] == 'Выполнена']
         keyboard = types.InlineKeyboardMarkup(row_width=1)
         keyboard.add(*buttons)
-        keyboard.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbClaims-A"))
+        keyboard.add(types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbClaims-A"))
         text = 'Выберите название прогулки:'
         if buttons == []:
             text = 'К сожалению новых заявок пока нет!'
@@ -547,7 +547,7 @@ def callback_inline(call):
                      types.InlineKeyboardButton(text=f"Поставить статус - Отклонена",
                                                callback_data=f"ClbClaimTrue{rows_claims[i][3].split()[0]}_{rows_claims[i][3].split()[1]}-True_3-A"),
                      types.InlineKeyboardButton(text=f"Написать сообщение к заявке", callback_data=f"ClbSendMessage"),
-                     types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbClaims-A"))
+                     types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbClaims-A"))
             claim_a['admin_claim_id'] = rows_claims[i][0]
             cur.execute(f"SELECT * FROM p{rows_claims[i][1]} WHERE Date = '{rows_claims[i][3]}'")
             r = cur.fetchall()
@@ -569,7 +569,7 @@ def callback_inline(call):
             cur.execute(f'''UPDATE p{rows_claims[i][1]} SET State = 'Выполнена' WHERE Date = '{rows_claims[i][3]}';''')
             con.commit()
             keyb = types.InlineKeyboardMarkup(row_width=1)
-            keyb.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbClaims-A"))
+            keyb.add(types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbClaims-A"))
             bot.send_message(rows_claims[i][1], f'Ваша заявка "{rows_claims[i][2]}" от '
                                                 f'{".".join(rows_claims[i][3].split()[0].split("-")[::-1])} '
                                                 f'{":".join(rows_claims[i][3].split()[1].split(":")[0:2])} выполнена!')
@@ -585,7 +585,7 @@ def callback_inline(call):
             cur.execute(f'''UPDATE p{rows_claims[i][1]} SET State = 'Одобрена' WHERE Date = '{rows_claims[i][3]}';''')
             con.commit()
             keyb = types.InlineKeyboardMarkup(row_width=1)
-            keyb.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbClaims-A"))
+            keyb.add(types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbClaims-A"))
             bot.send_message(rows_claims[i][1], f'Ваша заявка "{rows_claims[i][2]}" от '
                                                 f'{".".join(rows_claims[i][3].split()[0].split("-")[::-1])} '
                                                 f'{":".join(rows_claims[i][3].split()[1].split(":")[0:2])} одобрена!')
@@ -601,7 +601,7 @@ def callback_inline(call):
             cur.execute(f'''UPDATE p{rows_claims[i][1]} SET State = 'Отклонена' WHERE Date = '{rows_claims[i][3]}';''')
             con.commit()
             keyb = types.InlineKeyboardMarkup(row_width=1)
-            keyb.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbClaims-A"))
+            keyb.add(types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbClaims-A"))
             bot.send_message(rows_claims[i][1], f'Ваша заявка "{rows_claims[i][2]}" от '
                                                 f'{".".join(rows_claims[i][3].split()[0].split("-")[::-1])} '
                                                 f'{":".join(rows_claims[i][3].split()[1].split(":")[0:2])} отклонена!')
@@ -617,7 +617,7 @@ def callback_inline(call):
         keyboard.add(types.InlineKeyboardButton(text='WhatsApp', url='https://wa.me/+79407120912'),
                      types.InlineKeyboardButton(text='Telegram', url='tg://resolve?domain=simeon_kolchin'),
                      types.InlineKeyboardButton(text='Instagram', url='tg://resolve?domain=simeon_kolchin'),
-                     types.InlineKeyboardButton(text=f"Назад", callback_data=f"ClbStart"))
+                     types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbStart"))
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                               text='Вы можете написать нам:', reply_markup=keyboard)
 
