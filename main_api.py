@@ -121,7 +121,7 @@ def price_list(message):
                range(len(rows))]
     keyboard = types.InlineKeyboardMarkup(row_width=1)
     keyboard.add(*buttons)
-    keyboard.add(types.InlineKeyboardButton(text=f"Главное меню", callback_data=f"ClbStart"))
+    keyboard.add(types.InlineKeyboardButton(text=f"Главное меню »", callback_data=f"ClbStart"))
     bot.send_message(chat_id=message.chat.id, text='<b>ПРОГУЛКИ. Выберите подходящий вариант:</b>', parse_mode='html',
                           reply_markup=keyboard)
 
@@ -140,7 +140,7 @@ def help(message):
     keyboard.add(types.InlineKeyboardButton(text='WhatsApp', url='https://wa.me/+79407120912'),
                  types.InlineKeyboardButton(text='Telegram', url='tg://resolve?domain=simeon_kolchin'),
                  types.InlineKeyboardButton(text='Instagram', url='tg://resolve?domain=simeon_kolchin'),
-                 types.InlineKeyboardButton(text=f"Главное меню", callback_data=f"ClbStart"))
+                 types.InlineKeyboardButton(text=f"Главное меню »", callback_data=f"ClbStart"))
     bot.send_message(chat_id=message.chat.id, text='Вы можете написать нам:', reply_markup=keyboard)
 
 
@@ -162,7 +162,7 @@ def my_claims(message):
                range(len(rows))]
     keyboard = types.InlineKeyboardMarkup(row_width=1)
     keyboard.add(*buttons)
-    keyboard.add(types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbStart"))
+    keyboard.add(types.InlineKeyboardButton(text=f"Главное меню »", callback_data=f"ClbStart"))
     bot.send_message(chat_id=message.chat.id, text='Выберите название прогулки:', reply_markup=keyboard)
 
 
