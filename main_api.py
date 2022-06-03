@@ -168,6 +168,18 @@ def my_claims(message):
     bot.send_message(chat_id=message.chat.id, text='Выберите название прогулки:', reply_markup=keyboard)
 
 
+@bot.message_handler(commands=['db_config'])
+def start(message):
+    if message.chat.id in admins:
+        cur.execute("""SELECT table_name FROM information_schema.tables
+                   WHERE table_schema = 'public'""")
+        buttons = [types.InlineKeyboardButton(text=f"{table[0]}", callback_data=f"db_config_{table[0]}") for table in
+                   cur.fetchall()]
+        keyboard = types.InlineKeyboardMarkup(row_width=1)
+        keyboard.add(*buttons)
+        bot.send_message(chat_id=message.chat.id, text='Все таблицы бота:', reply_markup=keyboard)
+
+
 # Добавление заявки пользователя ----- Добавление заявки пользователя ----- Добавление заявки пользователя ----- Добавление заявки пользователя
 @bot.message_handler(func=lambda message: dbworker.get_current_state(message.chat.id) == config.States.SendClaim.value)
 def user_age(message):
@@ -745,6 +757,39 @@ def callback_inline(call):
                                    f'\n\n<b>ПРОКАТ • ПРОГУЛКИ • ИНДИВИДУАЛЬНЫЕ ТУРЫ</b>'
                                    f'\n\n<code>нажмите «Прайс» и выберите прогулку</code>', parse_mode='html',
                               reply_markup=keyboard)
+
+    if call.data == f'db_config_clb':
+        if call.message.chat.id in admins:
+            cur.execute("""SELECT table_name FROM information_schema.tables
+                       WHERE table_schema = 'public'""")
+            buttons = [types.InlineKeyboardButton(text=f"{table[0]}", callback_data=f"db_config_{table[0]}") for table in cur.fetchall()]
+            keyboard = types.InlineKeyboardMarkup(row_width=1)
+            keyboard.add(*buttons)
+            bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                                  text='Все таблицы базы данных:', reply_markup=keyboard)
+
+
+    cur.execute("""SELECT table_name FROM information_schema.tables
+                       WHERE table_schema = 'public'""")
+    for table_name in cur.fetchall():
+        if call.data == f'db_config_{table_name[0]}':
+            if call.message.chat.id in admins:
+                cur.execute(f"""SELECT * FROM {table_name[0]}""")
+                key = types.InlineKeyboardMarkup(row_width=1)
+                key.add(types.InlineKeyboardButton(text="Да", callback_data=f"db_config_{table_name[0]}_del"),
+                        types.InlineKeyboardButton(text="Нет", callback_data="db_config_clb"))
+                bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                                      text=f'Зачения:'
+                                           f'\n\n{[(i[0], i[1]) for i in cur.fetchall()]}'
+                                           f'\n\nХотите очистить таблицу?', reply_markup=key)
+
+        if call.data == f'db_config_{table_name[0]}_del':
+            if call.message.chat.id in admins:
+                cur.execute(f''' DELETE FROM {table_name[0]} ''')
+                key = types.InlineKeyboardMarkup(row_width=1)
+                key.add(types.InlineKeyboardButton(text="« Назад", callback_data="db_config_clb"))
+                bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                                      text='Выполнено!', reply_markup=key)
 
 
 bot.polling(none_stop = True, interval = 0)
