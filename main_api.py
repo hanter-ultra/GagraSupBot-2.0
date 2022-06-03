@@ -9,16 +9,16 @@ import random
 from telebot import types
 from config import Token, admins
 
-DATABASE_URL = os.environ['DATABASE_URL']
-
-con = psycopg2.connect(DATABASE_URL, sslmode='require')
-# con = psycopg2.connect(
-#     database="postgres",
-#     user="postgres",
-#     password="gs",
-#     host="127.0.0.1",
-#     port="5432"
-# )
+# DATABASE_URL = os.environ['DATABASE_URL']
+#
+# con = psycopg2.connect(DATABASE_URL, sslmode='require')
+con = psycopg2.connect(
+    database="postgres",
+    user="postgres",
+    password="gs",
+    host="127.0.0.1",
+    port="5432"
+)
 cur = con.cursor()
 
 bot = telebot.TeleBot(Token)
@@ -45,6 +45,7 @@ con.commit()
 claim_a = {}
 claim_p = {}
 new_event = {}
+edit_event = {}
 
 
 @bot.message_handler(commands=['start'])
@@ -84,7 +85,8 @@ def start(message):
         buttons = [
             types.InlineKeyboardButton(text="Прайс", callback_data="ClbEvents"),
             types.InlineKeyboardButton(text="Помощь", callback_data="ClbHelp"),
-            types.InlineKeyboardButton(text="Мои заявки", callback_data="ClbClaims")
+            types.InlineKeyboardButton(text="Мои заявки", callback_data="ClbClaims"),
+            types.InlineKeyboardButton(text='Наш Instagram', url='https://www.instagram.com/gagra_sup/')
         ]
         keyboard = types.InlineKeyboardMarkup(row_width=1)
         keyboard.add(*buttons)
@@ -262,6 +264,40 @@ def user_age(message):
     dbworker.set_state(message.chat.id, config.States.S_START.value)
 
 
+# Редактирование мероприятия ----- Редактирование мероприятия ----- Редактирование мероприятия ----- Редактирование мероприятия ----- Редактирование мероприятия
+@bot.message_handler(func=lambda message: dbworker.get_current_state(message.chat.id) == config.States.EditNameEvent.value)
+def edit_name_event(message):
+    id = edit_event[message.chat.id, 'Id']
+    cur.execute(f'''UPDATE events SET Name = '{message.text}' WHERE Id = '{id}';''')
+    con.commit()
+    key = types.InlineKeyboardMarkup(row_width=1)
+    key.add(types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbEvents-A"))
+    bot.send_message(message.chat.id, 'Мероприятие обновлено!', reply_markup=key)
+    dbworker.set_state(message.chat.id, config.States.S_START.value)
+
+
+@bot.message_handler(func=lambda message: dbworker.get_current_state(message.chat.id) == config.States.EditTextEvent.value)
+def edit_text_event(message):
+    id = edit_event[message.chat.id, 'Id']
+    cur.execute(f'''UPDATE events SET Text = '{message.text}' WHERE Id = '{id}';''')
+    con.commit()
+    key = types.InlineKeyboardMarkup(row_width=1)
+    key.add(types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbEvents-A"))
+    bot.send_message(message.chat.id, 'Мероприятие обновлено!', reply_markup=key)
+    dbworker.set_state(message.chat.id, config.States.S_START.value)
+
+
+@bot.message_handler(func=lambda message: dbworker.get_current_state(message.chat.id) == config.States.EditPriceEvent.value)
+def edit_price_event(message):
+    id = edit_event[message.chat.id, 'Id']
+    cur.execute(f'''UPDATE events SET Price = '{message.text}' WHERE Id = '{id}';''')
+    con.commit()
+    key = types.InlineKeyboardMarkup(row_width=1)
+    key.add(types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbEvents-A"))
+    bot.send_message(message.chat.id, 'Мероприятие обновлено!', reply_markup=key)
+    dbworker.set_state(message.chat.id, config.States.S_START.value)
+
+
 # Callback ----- Callback ----- Callback ----- Callback ----- Callback
 @bot.callback_query_handler(func=lambda call: True)
 def callback_inline(call):
@@ -297,7 +333,8 @@ def callback_inline(call):
             buttons = [
                 types.InlineKeyboardButton(text="Прайс", callback_data="ClbEvents"),
                 types.InlineKeyboardButton(text="Помощь", callback_data="ClbHelp"),
-                types.InlineKeyboardButton(text="Мои заявки", callback_data="ClbClaims")
+                types.InlineKeyboardButton(text="Мои заявки", callback_data="ClbClaims"),
+                types.InlineKeyboardButton(text='Наш Instagram', url='https://www.instagram.com/gagra_sup/')
             ]
             keyboard = types.InlineKeyboardMarkup(row_width=1)
             keyboard.add(*buttons)
@@ -319,7 +356,7 @@ def callback_inline(call):
                                           f'\n\n<code>нажмите «Прайс» и выберите прогулку</code>', parse_mode='html', reply_markup=keyboard)
 
 
-    # Показать мероприятия для пользователя ----- Показать мероприятия для пользователя ----- Показать мероприятия для пользователя
+    # Прайс / мероприятия  ----- Прайс / мероприятия  ----- Прайс / мероприятия  ----- Прайс / мероприятия  ----- Прайс / мероприятия
     if call.data == 'ClbEvents':
         cur.execute("SELECT * FROM events")
         rows = cur.fetchall()
@@ -327,15 +364,19 @@ def callback_inline(call):
                    range(len(rows))]
         keyboard = types.InlineKeyboardMarkup(row_width=1)
         keyboard.add(*buttons)
-        keyboard.add(types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbStart"))
+        if call.message.chat.id in admins:
+            keyboard.add(types.InlineKeyboardButton(text='« Назад', callback_data="ClbBot-A"))
+        else:
+            keyboard.add(types.InlineKeyboardButton(text='« Назад', callback_data="ClbStart"))
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                                   text='<b>ПРОГУЛКИ. Выберите подходящий вариант:</b>', parse_mode='html', reply_markup=keyboard)
 
 
-    # Показать мероприятия для пользователя вывод ----- Показать мероприятия для пользователя вывод ----- Показать мероприятия для пользователя вывод
     cur.execute("SELECT * FROM events")
     rows_events = cur.fetchall()
     for i in range(len(rows_events)):
+
+        # Прайс / мероприятия вывод ----- Прайс / мероприятия вывод ----- Прайс / мероприятия вывод ----- Прайс / мероприятия вывод
         if call.data == f"ClbEvents{rows_events[i][0]}":
             key = types.InlineKeyboardMarkup(row_width=1)
             key.add(types.InlineKeyboardButton(text=f"Подать заявку", callback_data=f"ClbEventsSend{rows_events[i][0]}"),
@@ -369,26 +410,71 @@ def callback_inline(call):
                                       reply_markup=keyss)
 
 
-        # Все мероприятия вывод ----- Все мероприятия вывод ----- Все мероприятия вывод ----- Все мероприятия вывод ----- Все мероприятия вывод
+        # Прайс / мероприятия админ вывод ----- Прайс / мероприятия админ вывод ----- Прайс / мероприятия админ вывод ----- Прайс / мероприятия админ вывод
         if call.data == f"ClbEvents{rows_events[i][0].split()[0]}_{rows_events[i][0].split()[1]}-A":
             key = types.InlineKeyboardMarkup(row_width=1)
-            key.add(types.InlineKeyboardButton(text=f"Удалить",
-                                               callback_data=f"ClbDelEvent{rows_events[i][0].split()[0]}_{rows_events[i][0].split()[1]}"),
+            key.add(types.InlineKeyboardButton(text=f"Редактировать название", callback_data=f"ClbEditNameEvent{rows_events[i][0].split()[0]}_{rows_events[i][0].split()[1]}"),
+                    types.InlineKeyboardButton(text=f"Редактировать текст", callback_data=f"ClbEditTextEvent{rows_events[i][0].split()[0]}_{rows_events[i][0].split()[1]}"),
+                    types.InlineKeyboardButton(text=f"Редактировать цену", callback_data=f"ClbEditPriceEvent{rows_events[i][0].split()[0]}_{rows_events[i][0].split()[1]}"),
+                    types.InlineKeyboardButton(text=f"Удалить", callback_data=f"ClbDelEvent{rows_events[i][0].split()[0]}_{rows_events[i][0].split()[1]}_1"),
                     types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbEvents-A"))
             bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                                   text=f'{rows_events[i][2]}'
                                          f'\n\n<b>Цена: {rows_events[i][4]}₽</b>', parse_mode='html', reply_markup=key)
 
 
+        # Редактирование мероприятия ----- Редактирование мероприятия ----- Редактирование мероприятия ----- Редактирование мероприятия
+        if call.data == f"ClbEditNameEvent{rows_events[i][0].split()[0]}_{rows_events[i][0].split()[1]}":
+            key = types.InlineKeyboardMarkup(row_width=1)
+            key.add(types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbEvents{rows_events[i][0].split()[0]}_{rows_events[i][0].split()[1]}-A"))
+            edit_event[call.message.chat.id, 'Id'] = rows_events[i][0]
+            dbworker.set_state(call.message.chat.id, config.States.EditNameEvent.value)
+            bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                                  text='Напишите в чат новое название:', reply_markup=key)
+
+
+        if call.data == f"ClbEditTextEvent{rows_events[i][0].split()[0]}_{rows_events[i][0].split()[1]}":
+            key = types.InlineKeyboardMarkup(row_width=1)
+            key.add(types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbEvents{rows_events[i][0].split()[0]}_{rows_events[i][0].split()[1]}-A"))
+            edit_event[call.message.chat.id, 'Id'] = rows_events[i][0]
+            dbworker.set_state(call.message.chat.id, config.States.EditTextEvent.value)
+            bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                                  text='Напишите новый текст и не забывайте писать правильные теги открывая и закрывая их.'
+                                       '\n\nВиды тегов:'
+                                       '\n<b>Жирный</b>'
+                                       '\n<em>Курсив</em>'
+                                       '\n<ins>С подчеркиванием</ins>'
+                                       '\n<del>Зачеркнутый</del>'
+                                       '\n<code>Моноширинный (вообще это кодовый для программистов)</code>'
+                                       '\n<a href="какая нибудь ссылка">Слово в котором будет ссылка</a>'
+                                       '\n\nНапишите в чат новый текст:', reply_markup=key)
+
+
+        if call.data == f"ClbEditPriceEvent{rows_events[i][0].split()[0]}_{rows_events[i][0].split()[1]}":
+            key = types.InlineKeyboardMarkup(row_width=1)
+            key.add(types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbEvents{rows_events[i][0].split()[0]}_{rows_events[i][0].split()[1]}-A"))
+            edit_event[call.message.chat.id, 'Id'] = rows_events[i][0]
+            dbworker.set_state(call.message.chat.id, config.States.EditPriceEvent.value)
+            bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                                  text='Напишите новую цену:', reply_markup=key)
+
+
         # Удалить мероприятие ----- Удалить мероприятие ----- Удалить мероприятие ----- Удалить мероприятие ----- Удалить мероприятие
-        if call.data == f"ClbDelEvent{rows_events[i][0].split()[0]}_{rows_events[i][0].split()[1]}":
+        if call.data == f"ClbDelEvent{rows_events[i][0].split()[0]}_{rows_events[i][0].split()[1]}_1":
+            key = types.InlineKeyboardMarkup(row_width=1)
+            key.add(types.InlineKeyboardButton(text=f"Да", callback_data=f"ClbDelEvent{rows_events[i][0].split()[0]}_{rows_events[i][0].split()[1]}_2"),
+                    types.InlineKeyboardButton(text=f"Нет", callback_data=f"ClbEvents{rows_events[i][0].split()[0]}_{rows_events[i][0].split()[1]}-A"))
+            bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                                  text='Вы точно хотите удалить мероприятие?', reply_markup=key)
+
+
+        if call.data == f"ClbDelEvent{rows_events[i][0].split()[0]}_{rows_events[i][0].split()[1]}_2":
             cur.execute(f'''DELETE FROM events WHERE Id = '{rows_events[i][0]}';''')
             con.commit()
             key = types.InlineKeyboardMarkup(row_width=1)
             key.add(types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbEvents-A"))
             bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                                   text='Мероприятие удалено!', reply_markup=key)
-
 
 
     # Все заявки для пользователя ----- Все заявки для пользователя ----- Все заявки для пользователя ----- Все заявки для пользователя ----- Все заявки для пользователя
@@ -405,7 +491,12 @@ def callback_inline(call):
             text = 'К сожалению у вас пока нет заявок((( ' \
                    '\n\n<code>Чтобы подать заявку нажмите «Прайс» и выберите прогулку</code>'
             keyboard.add(types.InlineKeyboardButton(text=f"Прайс", callback_data=f"ClbEvents"))
-        keyboard.add(types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbStart"))
+
+        if call.message.chat.id in admins:
+            keyboard.add(types.InlineKeyboardButton(text='« Назад', callback_data="ClbBot-A"))
+        else:
+            keyboard.add(types.InlineKeyboardButton(text='« Назад', callback_data="ClbStart"))
+
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                               text=text, parse_mode='html', reply_markup=keyboard)
 
@@ -433,7 +524,7 @@ def callback_inline(call):
                               text='Напишите сообщение...')
 
 
-    # Прайс / мероприятия ----- Прайс / мероприятия ----- Прайс / мероприятия ----- Прайс / мероприятия ----- Прайс / мероприятия
+    # Прайс / мероприятия админ ----- Прайс / мероприятия админ ----- Прайс / мероприятия админ ----- Прайс / мероприятия админ ----- Прайс / мероприятия админ
     if call.data == 'ClbEvents-A':
         cur.execute("SELECT * FROM events")
         rows = cur.fetchall()
@@ -615,11 +706,45 @@ def callback_inline(call):
     # Помощь ----- Помощь ----- Помощь ----- Помощь ----- Помощь
     if call.data == "ClbHelp":
         keyboard = types.InlineKeyboardMarkup(row_width=1)
-        keyboard.add(types.InlineKeyboardButton(text='WhatsApp', url='https://wa.me/+79407120912'),
-                     types.InlineKeyboardButton(text='Telegram', url='tg://resolve?domain=simeon_kolchin'),
-                     types.InlineKeyboardButton(text='Instagram', url='tg://resolve?domain=simeon_kolchin'),
-                     types.InlineKeyboardButton(text=f"« Назад", callback_data=f"ClbStart"))
+        keyboard.add(types.InlineKeyboardButton(text='WhatsApp', url='https://wa.me/+79407322932'),
+                     types.InlineKeyboardButton(text='Telegram', url='tg://resolve?domain=danyaagrba'),
+                     types.InlineKeyboardButton(text='Instagram', url='https://www.instagram.com/gagra_sup/'))
+        if call.message.chat.id in admins:
+            keyboard.add(types.InlineKeyboardButton(text='« Назад', callback_data="ClbBot-A"))
+        else:
+            keyboard.add(types.InlineKeyboardButton(text='« Назад', callback_data="ClbStart"))
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                               text='Вы можете написать нам:', reply_markup=keyboard)
+
+
+    # Бот для админа ----- Бот для админа ----- Бот для админа ----- Бот для админа ----- Бот для админа
+    if call.data == "ClbBot-A":
+        buttons = [
+            types.InlineKeyboardButton(text="Прайс", callback_data="ClbEvents"),
+            types.InlineKeyboardButton(text="Помощь", callback_data="ClbHelp"),
+            types.InlineKeyboardButton(text="Мои заявки", callback_data="ClbClaims"),
+            types.InlineKeyboardButton(text='Наш Instagram', url='https://www.instagram.com/gagra_sup/'),
+            types.InlineKeyboardButton(text='« Назад', callback_data="ClbStart"),
+        ]
+        keyboard = types.InlineKeyboardMarkup(row_width=1)
+        keyboard.add(*buttons)
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                              text=f' 👋🏻 <b>Приветствую! Я GAGRASUPbot.</b>'
+                                   f' Откройте для себя новый увлекательный мир морских прогулок. '
+                                   f'Ознакомьтесь с нашим предложением и выберите для себя самое лучшее'
+                                   f'\n\n <b>Сапбординг</b> <em>— именно тот вид активности, который '
+                                   f'понравится абсолютно всем, это по-настоящему универсальный вид '
+                                   f'активного отдыха, который по душе и взрослым, и детям. Многие хотят '
+                                   f'просто кататься по морю, по реке, встречать рассветы и загорать. '
+                                   f'\nНикакого экстрима.</em>'
+                                   f'\n\nИНСТРУКТАЖ И БЕЗОПАСНОСТЬ'
+                                   f'\n У нас только качественные и брендовые сапборды Stormline, Bombitto и другие.'
+                                   f'\n\n Гид проводит обязательный инструктаж перед сплавом, выдает спасательные '
+                                   f'жилеты, водонепроницаемые чехлы для телефонов. '
+                                   f'\n\n <em>*При неблагоприятных климатических условиях возможен перенос прогулки</em>'
+                                   f'\n\n<b>ПРОКАТ • ПРОГУЛКИ • ИНДИВИДУАЛЬНЫЕ ТУРЫ</b>'
+                                   f'\n\n<code>нажмите «Прайс» и выберите прогулку</code>', parse_mode='html',
+                              reply_markup=keyboard)
+
 
 bot.polling(none_stop = True, interval = 0)
